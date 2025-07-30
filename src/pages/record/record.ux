@@ -1,0 +1,300 @@
+<template>
+  <div class="page" @swipe="toPage">
+    <!-- 顶栏 -->
+    <div class="top">
+      <div class="btn">
+        <image class="btn-icon" src="/common/back.png" @click="toPre"></image>
+      </div>
+      <text class="today-total">历史记录</text>
+      <div class="btn">
+        <image class="btn-icon" src="/common/detail.png"></image>
+      </div>
+    </div>
+    <!-- 记录列表 -->
+    <list class="record-list" if="{{ records.length != 0 }}">
+      <list-item for="{{ records }}" type="record" class="record-item">
+        <div class="record-header">
+          <text class="record-date">{{ $item.date }}</text>
+          <text class="record-total">{{ $item.total }}分钟</text>
+        </div>
+
+        <div class="record-details">
+          <div class="session" for="{{ $item.sessions }}">
+            <text class="session-time">{{ $item.start }} - {{ $item.end }}</text>
+            <div class="session-info">
+              <text class="session-mode">{{ $item.mode }}</text>
+              <text class="session-duration">{{ $item.duration }}分钟</text>
+            </div>
+          </div>
+        </div>
+      </list-item>
+    </list>
+
+    <!-- 空状态 -->
+    <div class="empty-state" if="{{ records.length == 0 }}">
+      <image src="/common/warn.png" class="empty-icon"></image>
+      <text class="empty-text">暂无历史记录</text>
+      <text class="empty-hint">开始专注以记录数据</text>
+    </div>
+  </div>
+</template>
+
+<script>
+import router from "@system.router"
+import storage from "@system.storage"
+import focusDB from '../../database/focusDB'
+import Nav from "../../nav/nav"
+
+export default {
+  private: {
+    records: [], // 历史记录数据
+    totalMinutes: 0, // 总专注分钟数
+    recordDays: 0, // 有记录的天数
+    viewMode: "list" // 视图模式（list/chart）
+  },
+
+  async onInit() {
+    try {
+      // 开启详细日志
+      focusDB.setLogging(true)
+      // 确保数据库已初始化
+      await focusDB.init();
+      console.log("加载记录")
+      // 加载记录
+      this.records = focusDB.getHistoryRecords();
+      const stats = focusDB.getStatistics();
+      this.totalMinutes = stats.totalMinutes;
+      this.recordDays = stats.recordDays;
+    } catch (err) {
+      console.error("加载记录失败", err);
+    }
+  },
+
+  // 加载历史记录
+  loadRecords() {
+    storage.get({
+      key: "focusRecords",
+      success: (data) => {
+        if (data) {
+          const records = JSON.parse(data)
+          this.records = records
+          this.calculateStats(records)
+        }
+      },
+      fail: () => {
+        console.log("加载记录失败")
+      }
+    })
+  },
+
+  // 计算统计数据
+  calculateStats(records) {
+    let totalMinutes = 0
+    let recordDays = 0
+
+    records.forEach((day) => {
+      recordDays++
+      day.sessions.forEach((session) => {
+        totalMinutes += session.duration
+      })
+    })
+
+    this.totalMinutes = totalMinutes
+    this.recordDays = recordDays
+  },
+
+  toPre() {
+    router.back()
+  },
+
+  toPage(eve) {
+    switch (eve.direction) {
+      case "left":
+        console.log("左滑")
+        break
+      case "right":
+        console.log("右滑")
+        break
+      case "up":
+        console.log("上滑")
+        break
+      case "down":
+        console.log("下滑")
+        this.toIndex()
+        break
+    }
+  },
+
+  // 切换视图模式
+  toggleView() {
+    this.viewMode = this.viewMode === "list" ? "chart" : "list"
+  },
+
+  toIndex() {
+    router.push({
+      uri: "/pages/index"
+    })
+  }
+}
+</script>
+
+<style>
+/* 页面 */
+.page {
+  flex-direction: column;
+  height: 100%;
+  background-color: #000000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+}
+
+/* 顶栏 */
+.top {
+  position: absolute;
+  top: 20px;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn {
+  height: 100px;
+  width: 100px;
+  border-radius: 50px;
+  border: 5px solid #ffffff70;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-icon {
+  height: 80px;
+  width: 80px;
+}
+
+.today-total {
+  font-size: 32px;
+  color: #ffffff;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* 统计卡片 */
+.stats-card {
+  flex-direction: row;
+  justify-content: space-around;
+  background-color: #1a1a1a;
+  border-radius: 20px;
+  padding: 15px 0;
+  margin-bottom: 20px;
+}
+
+.stat-item {
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 24px;
+  color: #aaaaaa;
+  margin-bottom: 5px;
+}
+
+.stat-value {
+  font-size: 32px;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+/* 记录列表 */
+.record-list {
+  height: 100%;
+  width: 100%;
+}
+
+.record-item {
+  flex-direction: column;
+  background-color: #1a1a1a;
+  border-radius: 20px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.record-header {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #333333;
+}
+
+.record-date {
+  font-size: 28px;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.record-total {
+  font-size: 28px;
+  color: #4caf50;
+}
+
+.record-details {
+  flex-direction: column;
+}
+
+.session {
+  flex-direction: column;
+  margin-top: 10px;
+}
+
+.session-time {
+  font-size: 24px;
+  color: #aaaaaa;
+}
+
+.session-info {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 5px;
+}
+
+.session-mode {
+  font-size: 24px;
+  color: #ffffff;
+}
+
+.session-duration {
+  font-size: 24px;
+  color: #4caf50;
+}
+
+/* 空状态 */
+.empty-state {
+  height:100%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.empty-icon {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 20px;
+}
+
+.empty-text {
+  font-size: 48px;
+  color: #ffffff;
+  margin-bottom: 20px;
+}
+
+.empty-hint {
+  font-size: 32px;
+  color: #aaaaaa;
+}
+</style>

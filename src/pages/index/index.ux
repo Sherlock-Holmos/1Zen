@@ -1,0 +1,382 @@
+<template>
+  <div class="page" @swipe="toPage">
+    <!-- 顶栏 -->
+    <div class="top">
+      <div class="btn" @click="toExit">
+        <image class="btn-icon" src="/common/back.png"></image>
+      </div>
+      <!-- 今日累计时间 -->
+      <text class="today-total">今日累计 {{ todayTotal }} 时</text>
+      <div class="btn" @click="toDetail">
+        <image class="btn-icon" src="/common/detail.png"></image>
+      </div>
+    </div>
+    <!-- 顶部大数字显示 -->
+    <text class="current-minute">{{ traditionalTime }}</text>
+
+    <!-- 动画区域 -->
+    <div class="anime-img-area" @swipe="changeMode">
+      <image src="/common/fish.png"></image>
+      <text class="state-mode">标准模式</text>
+    </div>
+
+    <!-- 操作按钮区域 -->
+    <div class="operate-line">
+      <div class="operate-btn" @click="toggleTimer">
+        <image class="operate-icon" src={{isRunning?"/common/pause.png":"/common/start.png"}}></image>
+      </div>
+      <div class="operate-btn" @click="finishSession">
+        <image class="operate-icon" src="/common/stop.png"></image>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import storage from "@system.storage"
+import vibrator from "@system.vibrator"
+import focusDB from "../../database/focusDB"
+import Nav from "../../nav/nav"
+
+export default {
+  private: {
+    modeNum: 2, //模式数量
+    currentMode: 0, //当前模式（0、1、2）
+    currentTime: 0, // 当前专注时长（秒）
+    currentMinute: 0, // 当前分钟数（分）
+    todayTotal: 0, // 今日累计专注时间（分钟）
+    isRunning: false, // 是否正在计时
+    timerInterval: null, // 计时器ID
+  },
+
+  computed: {
+    traditionalTime() {
+      const chen = Math.floor(this.currentMinute / 120)
+      const ke = Math.floor(this.currentMinute / 15)
+      return `${chen}辰 ${ke}刻`
+    }
+  },
+
+  async onInit() {
+    console.log("页面初始化开始")
+
+    // 开启详细日志
+    focusDB.setLogging(false)
+
+    this.loadData()
+    this.currentMinute = 0
+
+    // 初始化数据库
+    try {
+      console.log("开始初始化数据库...")
+      await focusDB.init()
+      console.log("数据库初始化成功")
+      // 可以在这里进行旧记录清理（可选）
+      // await focusDB.cleanupOldRecords();
+    } catch (err) {
+      console.error("数据库初始化失败", err)
+    }
+  },
+
+  onDestroy() {
+    console.log("页面销毁，清除计时器")
+    this.clearTimer()
+  },
+
+  loadData() {
+    console.log("加载今日累计数据...")
+    // 加载今日累计数据
+    storage.get({
+      key: "todayTotal",
+      success: (data) => {
+        if (data) {
+          this.todayTotal = parseInt(data)
+          console.log("加载数据成功")
+        }
+      },
+      fail: () => {
+        this.todayTotal = 0
+        console.log("加载数据失败")
+      }
+    })
+  },
+
+  toExit() {
+    this.$app.exit()
+  },
+
+  toPage(eve) {
+    switch (eve.direction) {
+      case "left":
+        console.log("左滑")
+        break
+      case "right":
+        console.log("右滑")
+        break
+      case "up":
+        console.log("上滑")
+        Nav.navRecord()
+        break
+      case "down":
+        console.log("下滑")
+        break
+    }
+  },
+  // 切换模式
+  changeMode(eve) {
+    switch (eve.direction) {
+      case "left":
+        console.log("左滑切换模式")
+        this.modeLeft
+        break
+      case "right":
+        console.log("右滑切换模式")
+        this.modeRight
+        break
+    }
+  },
+  getModeName(id){
+    switch(id){
+      case 0:
+        return "标准模式"
+      case 1:
+        return "休息模式"
+    }
+  },
+
+  modeLeft() {
+    if (this.currentMode < modeNum) {
+      currentTime = currentTime + 1
+    } else {
+      this.currentMode = this.currentMode - this.modeNum + 1
+    }
+  },
+
+  modeRight() {
+    if (this.currentMode > 0) {
+      currentTime = currentTime - 1
+    } else {
+      this.currentMode = this.currentMode + this.modeNum - 1
+    }
+  },
+
+  // 计时
+  toggleTimer() {
+    if (this.isRunning) {
+      this.pauseTimer()
+    } else {
+      this.startTimer()
+    }
+  },
+
+  startTimer() {
+    if(this.currentTime > 0) {
+      this.startTime = Date.now() - this.currentTime * 1000
+    } else {
+      this.startTime = Date.now()
+    }
+    // 开始计时
+    console.log("开始计时")
+    this.isRunning = true
+
+    this.timerInterval = setInterval(() => {
+      this.currentTime = Math.floor((Date.now() - this.startTime) / 1000)
+      this.currentMinute = Math.floor(this.currentTime / 60)
+    }, 1000)
+
+    // 震动反馈
+    vibrator.vibrate({mode: "short"})
+    console.log("震动")
+  },
+
+  pauseTimer() {
+    this.isRunning = false
+    clearInterval(this.timerInterval)
+  },
+
+  async finishSession() {
+    try {
+      console.log("===== 开始执行 finishSession =====")
+      console.log("当前状态:", {
+        isRunning: this.isRunning,
+        currentTime: this.currentTime,
+        currentMinute: this.currentMinute
+      })
+
+      // 暂停计时器
+      this.pauseTimer()
+      console.log("计时器已暂停")
+
+      // 确保有专注时间
+      if (this.currentTime <= 0) {
+        console.log("当前没有进行中的专注会话，跳过保存")
+        return
+      }
+
+      // 计算专注时长
+      const sessionMinutes = Math.ceil(this.currentTime / 60)
+      console.log(`本次专注时长: ${sessionMinutes}分钟 (${this.currentTime}秒)`)
+
+      // 更新今日累计
+      this.todayTotal += sessionMinutes
+      console.log(`更新今日累计: ${this.todayTotal}分钟`)
+
+      // 创建新记录
+      const now = new Date()
+      const startTime = new Date(now - this.currentTime * 1000)
+
+      const newRecord = {
+        id: `${now.toISOString().split("T")[0]}_${Date.now()}`,
+        date: now.toISOString().split("T")[0],
+        startTime: `${startTime.getHours().toString().padStart(2, "0")}:${startTime
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`,
+        endTime: `${now.getHours().toString().padStart(2, "0")}:${now
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`,
+        duration: sessionMinutes,
+        mode: this.getModeName(this.currentMode)
+      }
+
+      console.log("新记录内容:", JSON.stringify(newRecord, null, 2))
+
+      // 添加到数据库
+      try {
+        console.log("开始保存记录到数据库...")
+        await focusDB.addRecord(newRecord)
+        console.log("记录保存成功")
+      } catch (err) {
+        console.error("保存记录失败", err)
+      }
+
+      // 保存今日累计
+      console.log("开始保存今日累计数据...")
+      await this.saveTodayTotal()
+
+      // 重置计时器
+      this.currentTime = 0
+      this.currentMinute = 0
+
+      console.log("===== finishSession 执行结束 =====")
+    } catch (err) {
+      console.error("finishSession 执行出错:", err)
+    }
+  },
+
+  // 单独提取保存今日累计的方法
+  saveTodayTotal() {
+    return new Promise((resolve, reject) => {
+      storage.set({
+        key: "todayTotal",
+        value: this.todayTotal.toString(),
+        success: () => {
+          console.log("今日累计保存成功")
+          vibrator.vibrate({mode: "long"})
+          console.log("长震动反馈")
+          resolve()
+        },
+        fail: (err) => {
+          console.error("保存今日累计失败", err)
+          reject(err)
+        }
+      })
+    })
+  },
+
+  clearTimer() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval)
+      this.timerInterval = null
+    }
+  }
+}
+</script>
+
+<style>
+/* 页面 */
+.page {
+  flex-direction: column;
+  height: 100%;
+  background-color: #000000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+}
+
+/* 顶栏 */
+.top {
+  position: absolute;
+  top: 20px;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn {
+  height: 100px;
+  width: 100px;
+  border-radius: 50px;
+  border: 5px solid #ffffff70;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-icon {
+  height: 80px;
+  width: 80px;
+}
+
+.today-total {
+  font-size: 32px;
+  color: #ffffff;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* 计时区域 */
+.current-minute {
+  margin-top: 100px;
+  font-size: 86px;
+  color: #ffffff;
+  font-weight: bold;
+  text-align: center;
+  width: 100%;
+}
+
+/* 动画区域 */
+.anime-img-area {
+  margin: 40px;
+  flex-direction: column;
+}
+
+.state-mode {
+  color: #ffffff;
+}
+
+/* 操作按钮区域 */
+.operate-line {
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.operate-btn {
+  width: 160px;
+  height: 100px;
+  border-radius: 40px;
+  border: 5px solid #ffffff70;
+  justify-content: center;
+  align-items: center;
+}
+
+.operate-icon {
+  width: 80px;
+  height: 80px;
+}
+</style>
