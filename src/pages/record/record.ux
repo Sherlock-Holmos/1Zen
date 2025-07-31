@@ -2,47 +2,47 @@
   <div class="page" @swipe="toPage">
     <!-- 顶栏 -->
     <div class="top">
-      <div class="btn">
-        <image class="btn-icon" src="/common/back.png" @click="toPre"></image>
-      </div>
-      <text class="today-total">历史记录</text>
-      <div class="btn">
-        <image class="btn-icon" src="/common/detail.png"></image>
-      </div>
+      <div class="blank"></div>
+      <text class="title">历史记录</text>
+      <div class="blank"></div>
     </div>
-    <!-- 记录列表 -->
-    <list class="record-list" if="{{ records.length != 0 }}">
-      <list-item for="{{ records }}" type="record" class="record-item">
-        <div class="record-header">
-          <text class="record-date">{{ $item.date }}</text>
-          <text class="record-total">{{ $item.total }}分钟</text>
-        </div>
-
-        <div class="record-details">
-          <div class="session" for="{{ $item.sessions }}">
-            <text class="session-time">{{ $item.start }} - {{ $item.end }}</text>
-            <div class="session-info">
-              <text class="session-mode">{{ $item.mode }}</text>
-              <text class="session-duration">{{ $item.duration }}分钟</text>
-            </div>
+    <scroll class="scroll-container">
+      <!-- 加载状态 -->
+      <div class="loading-state" if="{{ isLoading }}">
+        <progress type="circular" class="loading-progress"></progress>
+        <text class="loading-text">加载记录中...</text>
+      </div>
+      <!-- 记录列表 -->
+      <list class="record-list" elif="{{ !isLoading && records.length != 0 }}">
+        <list-item for="{{ records }}" type="record" class="record-item">
+          <div class="record-header">
+            <text class="record-date">{{ $item.date }}</text>
+            <text class="record-total">{{ $item.total }}分钟</text>
           </div>
-        </div>
-      </list-item>
-    </list>
-
-    <!-- 空状态 -->
-    <div class="empty-state" if="{{ records.length == 0 }}">
-      <image src="/common/warn.png" class="empty-icon"></image>
-      <text class="empty-text">暂无历史记录</text>
-      <text class="empty-hint">开始专注以记录数据</text>
-    </div>
+          <!-- <div class="record-details">
+            <div class="session" for="{{ $item.sessions }}">
+              <text class="session-time">{{ $item.startTime }} - {{ $item.endTime }}</text>
+              <div class="session-info">
+                <text class="session-mode">{{ $item.mode }}</text>
+                <text class="session-duration">{{ $item.duration }}分钟</text>
+              </div>
+            </div>
+          </div> -->
+        </list-item>
+      </list>
+      <!-- 空状态 -->
+      <div class="empty-state" elif="{{ !isLoading && records.length == 0 }}">
+        <image src="/common/warn.png" class="empty-icon"></image>
+        <text class="empty-text">暂无历史记录</text>
+        <text class="empty-hint">开始专注以记录数据</text>
+      </div>
+    </scroll>
   </div>
 </template>
 
 <script>
 import router from "@system.router"
-import storage from "@system.storage"
-import focusDB from '../../database/focusDB'
+import focusDB from "../../database/focusDB"
 import Nav from "../../nav/nav"
 
 export default {
@@ -50,57 +50,30 @@ export default {
     records: [], // 历史记录数据
     totalMinutes: 0, // 总专注分钟数
     recordDays: 0, // 有记录的天数
-    viewMode: "list" // 视图模式（list/chart）
+    viewMode: "list", // 视图模式（list/chart）
+    isLoading: true // 添加加载状态
   },
 
   async onInit() {
     try {
+      this.isLoading = true
       // 开启详细日志
       focusDB.setLogging(true)
       // 确保数据库已初始化
-      await focusDB.init();
+      await focusDB.init()
       console.log("加载记录")
       // 加载记录
-      this.records = focusDB.getHistoryRecords();
-      const stats = focusDB.getStatistics();
-      this.totalMinutes = stats.totalMinutes;
-      this.recordDays = stats.recordDays;
+      this.records = focusDB.getHistoryRecords()
+      console.log("记录加载结束")
+      const stats = focusDB.getStatistics()
+      this.totalMinutes = stats.totalMinutes
+      this.recordDays = stats.recordDays
+      console.log(this.records)
     } catch (err) {
-      console.error("加载记录失败", err);
+      console.error("加载记录失败", err)
+    } finally {
+      this.isLoading = false
     }
-  },
-
-  // 加载历史记录
-  loadRecords() {
-    storage.get({
-      key: "focusRecords",
-      success: (data) => {
-        if (data) {
-          const records = JSON.parse(data)
-          this.records = records
-          this.calculateStats(records)
-        }
-      },
-      fail: () => {
-        console.log("加载记录失败")
-      }
-    })
-  },
-
-  // 计算统计数据
-  calculateStats(records) {
-    let totalMinutes = 0
-    let recordDays = 0
-
-    records.forEach((day) => {
-      recordDays++
-      day.sessions.forEach((session) => {
-        totalMinutes += session.duration
-      })
-    })
-
-    this.totalMinutes = totalMinutes
-    this.recordDays = recordDays
   },
 
   toPre() {
@@ -120,7 +93,7 @@ export default {
         break
       case "down":
         console.log("下滑")
-        this.toIndex()
+        Nav.navIndex()
         break
     }
   },
@@ -128,12 +101,6 @@ export default {
   // 切换视图模式
   toggleView() {
     this.viewMode = this.viewMode === "list" ? "chart" : "list"
-  },
-
-  toIndex() {
-    router.push({
-      uri: "/pages/index"
-    })
   }
 }
 </script>
@@ -148,12 +115,13 @@ export default {
   justify-content: center;
   padding: 20px;
   position: relative;
+  transition: opacity 0.3s ease-in-out;
 }
 
 /* 顶栏 */
 .top {
-  position: absolute;
-  top: 20px;
+  position: relative;
+  top: 0px;
   width: 100%;
   flex-direction: row;
   justify-content: space-between;
@@ -170,16 +138,41 @@ export default {
   align-items: center;
 }
 
+.blank {
+  height: 100px;
+  width: 100px;
+}
+
 .btn-icon {
   height: 80px;
   width: 80px;
 }
 
-.today-total {
-  font-size: 32px;
+.title {
+  font-size: 48px;
   color: #ffffff;
   font-weight: bold;
   text-align: center;
+}
+
+/* 加载状态样式 */
+.loading-state {
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-progress {
+  width: 100px;
+  height: 100px;
+  color: #173618; /* 绿色加载进度 */
+}
+
+.loading-text {
+  font-size: 32px;
+  color: #aaaaaa;
+  margin-top: 20px;
 }
 
 /* 统计卡片 */
@@ -209,73 +202,85 @@ export default {
   font-weight: bold;
 }
 
+/* 滚动列表 */
+.scroll-container {
+  flex-grow: 1;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+}
+
 /* 记录列表 */
 .record-list {
-  height: 100%;
+  flex-grow: 1;
   width: 100%;
+  margin-top: 120px;
 }
 
 .record-item {
+  height: 100px;
   flex-direction: column;
-  background-color: #1a1a1a;
-  border-radius: 20px;
+  justify-content: flex-start;
+  border-radius: 35px;
+  border: 5px solid #ffffff70;
   padding: 15px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .record-header {
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #333333;
 }
 
 .record-date {
-  font-size: 28px;
+  font-size: 42px;
   color: #ffffff;
   font-weight: bold;
 }
 
 .record-total {
-  font-size: 28px;
-  color: #4caf50;
+  font-size: 42px;
+  color: #ffffff;
 }
 
 .record-details {
   flex-direction: column;
+  height: 100%;
 }
 
 .session {
   flex-direction: column;
   margin-top: 10px;
+  height: 100%;
 }
 
 .session-time {
-  font-size: 24px;
+  height: 100px;
+  font-size: 34px;
   color: #aaaaaa;
 }
 
 .session-info {
+  height: 100%;
   flex-direction: row;
   justify-content: space-between;
   margin-top: 5px;
 }
 
 .session-mode {
-  font-size: 24px;
+  font-size: 28px;
   color: #ffffff;
 }
 
 .session-duration {
-  font-size: 24px;
+  font-size: 28px;
   color: #4caf50;
 }
 
 /* 空状态 */
 .empty-state {
-  height:100%;
+  flex-grow: 1;
   flex-direction: column;
   justify-content: center;
   align-items: center;

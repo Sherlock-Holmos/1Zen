@@ -19,4 +19,16 @@ export default class Nav {
       uri: "/pages/record"
     });
   }
+
+  static navAbout() {
+    router.push({
+      uri: "/pages/about"
+    });
+  }
+
+  static navNote() {
+    router.push({
+      uri: "/pages/note"
+    });
+  }
 }

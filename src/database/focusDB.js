@@ -206,52 +206,56 @@ class FocusDatabase {
     this.log("统计数据已更新", newStats)
   }
 
-  // // 获取历史记录（按日期倒序）
-  // getHistoryRecords() {
-  //   this.log("获取历史记录")
-  //   return [...this.database.records].sort((a, b) => new Date(b.date) - new Date(a.date))
-  // }
-
   getHistoryRecords() {
     this.log("获取历史记录")
-    
-    // 创建排序后的副本
-    const sortedRecords = [...this.database.records].sort((a, b) => 
-      new Date(b.date) - new Date(a.date)
+
+    const sortedRecords = [...this.database.records].sort(
+      (a, b) => new Date(b.date) - new Date(a.date)
     )
-    
-    // 添加控制台打印
-    if (this.logEnabled) {
-      console.groupCollapsed(`[DB] 获取的历史记录 (共 ${sortedRecords.length} 条)`)
-      
-      if (sortedRecords.length === 0) {
-        console.log("[DB] 暂无历史记录")
-      } else {
-        sortedRecords.forEach((record, index) => {
-          console.groupCollapsed(`记录 #${index + 1}: ${record.date} (总计: ${record.total} 分钟)`)
-          console.log(`日期: ${record.date}`)
-          console.log(`总专注时长: ${record.total} 分钟`)
-          console.log(`会话数量: ${record.sessions.length}`)
-          
-          console.groupCollapsed(`会话详情`)
-          record.sessions.forEach((session, sessionIndex) => {
-            console.log(`会话 #${sessionIndex + 1}:`)
-            console.log(`  ID: ${session.id}`)
-            console.log(`  开始时间: ${session.startTime}`)
-            console.log(`  结束时间: ${session.endTime}`)
-            console.log(`  时长: ${session.duration} 分钟`)
-            console.log(`  模式: ${session.mode}`)
-          })
-          console.groupEnd() // 会话详情
-          
-          console.groupEnd() // 单个记录
+    console.log("排序结束")
+    if (this.logEnabled && sortedRecords.length > 0) {
+      // console.groupCollapsed(`[DB] 获取的历史记录 (共 ${sortedRecords.length} 条)`)
+      sortedRecords.forEach((record, index) => {
+        console.log(
+          `%c${record.date}%c: ${record.total}分钟, ${record.sessions.length}个会话`,
+          "color:#1E88E5; font-weight:bold",
+          ""
+        )
+
+        // 按需展开会话详情
+        // console.groupCollapsed(`会话详情`)
+        record.sessions.forEach((session, sessionIndex) => {
+          console.log(
+            `会话${sessionIndex + 1}: ${session.startTime}-${session.endTime} ` +
+              `(${session.duration}分钟, ${session.mode})`
+          )
         })
-      }
-      
-      console.groupEnd() // 所有记录
+        // console.groupEnd()
+      })
+      // console.groupEnd() // 外层分组结束
+    } else if (this.logEnabled) {
+      console.log("[DB] 暂无历史记录")
     }
-    
+
     return sortedRecords
+  }
+
+  getStatistics() {
+    this.log("获取统计信息", this.database?.statistics || null)
+
+    // 如果数据库未初始化，返回空统计数据
+    if (!this.database) {
+      console.warn("[DB] 警告: 数据库尚未初始化，返回空统计信息")
+      return {
+        totalMinutes: 0,
+        recordDays: 0,
+        dailyAverage: 0,
+        longestStreak: 0
+      }
+    }
+
+    // 直接返回当前统计信息
+    return {...this.database.statistics} // 使用展开操作符创建副本
   }
 
   // 清理旧记录（保留最近30天）
@@ -274,6 +278,54 @@ class FocusDatabase {
     await this.save()
 
     return this.database
+  }
+
+   /**
+   * 重置数据库（清空所有数据）
+   */
+   async resetDatabase() {
+    try {
+      this.log("开始重置数据库...");
+      
+      // 创建全新的初始数据结构
+      this.database = {
+        version: 1.0,
+        records: [],
+        statistics: {
+          totalMinutes: 0,
+          recordDays: 0,
+          dailyAverage: 0,
+          longestStreak: 0
+        }
+      };
+
+      // 保存重置后的数据库
+      await this.save();
+      
+      this.log("数据库已重置为初始状态", {
+        version: this.database.version,
+        records: this.database.records.length
+      });
+
+      this.deleteToday()
+      
+      return true;
+    } catch (err) {
+      this.error("重置数据库失败", err);
+      throw new Error(`数据库重置失败: ${err.message}`);
+    }
+  }
+
+  deleteToday(){
+    storage.delete({
+      key: 'todayTotal',
+      success: function(data) {
+        console.log('今日累计删除')
+      },
+      fail: function(data, code) {
+        console.log("今日累计删除失败")
+      }
+    })
   }
 
   // 启用/禁用日志

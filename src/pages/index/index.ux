@@ -6,9 +6,9 @@
         <image class="btn-icon" src="/common/back.png"></image>
       </div>
       <!-- 今日累计时间 -->
-      <text class="today-total">今日累计 {{ todayTotal }} 时</text>
+      <text class="today-total">{{ totalTime }}</text>
       <div class="btn" @click="toDetail">
-        <image class="btn-icon" src="/common/detail.png"></image>
+        <image class="btn-icon" src="/common/set.png"></image>
       </div>
     </div>
     <!-- 顶部大数字显示 -->
@@ -16,8 +16,8 @@
 
     <!-- 动画区域 -->
     <div class="anime-img-area" @swipe="changeMode">
-      <image src="/common/fish.png"></image>
-      <text class="state-mode">标准模式</text>
+      <image src={{currentMode==0?"/common/fish.png":"/common/tree.jpg"}}></image>
+      <text class="state-mode">{{ stateMode }}</text>
     </div>
 
     <!-- 操作按钮区域 -->
@@ -51,9 +51,21 @@ export default {
 
   computed: {
     traditionalTime() {
-      const chen = Math.floor(this.currentMinute / 120)
-      const ke = Math.floor(this.currentMinute / 15)
-      return `${chen}辰 ${ke}刻`
+      const chen = Math.floor(this.currentMinute / 60)
+      const ke = Math.floor(this.currentMinute % 60)
+      return `${chen}时 ${ke}分`
+    },
+    stateMode(){
+      switch(this.currentMode){
+        case 0:
+          return `标准模式`
+        case 1:
+          return `休闲模式`
+      }
+    },
+    totalTime(){
+      const time = this.todayTotal/60
+      return `今日累计 ${time.toFixed(1)} 时`
     }
   },
 
@@ -105,6 +117,10 @@ export default {
     this.$app.exit()
   },
 
+  toDetail(){
+    Nav.navDetail()
+  },
+
   toPage(eve) {
     switch (eve.direction) {
       case "left":
@@ -124,14 +140,12 @@ export default {
   },
   // 切换模式
   changeMode(eve) {
-    switch (eve.direction) {
+    switch(eve.direction){
       case "left":
-        console.log("左滑切换模式")
-        this.modeLeft
+        this.modeLeft()
         break
       case "right":
-        console.log("右滑切换模式")
-        this.modeRight
+        this.modeRight()
         break
     }
   },
@@ -145,8 +159,8 @@ export default {
   },
 
   modeLeft() {
-    if (this.currentMode < modeNum) {
-      currentTime = currentTime + 1
+    if (this.currentMode < this.modeNum-1) {
+      this.currentMode = this.currentMode + 1
     } else {
       this.currentMode = this.currentMode - this.modeNum + 1
     }
@@ -154,7 +168,7 @@ export default {
 
   modeRight() {
     if (this.currentMode > 0) {
-      currentTime = currentTime - 1
+      this.currentMode = this.currentMode - 1
     } else {
       this.currentMode = this.currentMode + this.modeNum - 1
     }

@@ -1,0 +1,231 @@
+<template>
+    <div class="page"  @swipe="toPage">
+      <!-- 顶栏 -->
+      <div class="top">
+        <div class="blank"></div>
+        <!-- 标题 -->
+        <text class="title" style="z-index:2">通知</text>
+        <div class="blank"></div>
+      </div>
+  
+      <!-- 详情 -->
+      <div class="detail-container">
+        <scroll class="detail-container" scroll-y="true" bounces="true">
+          <div class="row-container" style="border: 5px solid #ffffff80">
+            <div style="flex-direction: column; justify-content: space-around; height: 200px">
+              <text class="text-content">{{ name }}</text>
+              <text class="text-title">{{ versionName }}</text>
+            </div>
+            <image style="z-index:-1" src="/common/1Zen.png"></image>
+          </div>
+          <div class="row-container" style="height: 100px; border: 5px solid #ffffff80">
+            <text class="text-title">作者</text>
+            <text class="text-content" style="flex-wrap: wrap; width: 250px">JokerSh</text>
+          </div>
+          <div style="flex-direction: row; border-radius: 40px; border: 5px solid #ffffff80">
+            <div class="list-container" style="">
+              <div class="row-container" style="height: 90px">
+                <text class="text-title">版本名称</text>
+                <text class="text-content" style="flex-wrap: wrap; width: 250px">
+                  {{ versionName }}
+                </text>
+              </div>
+              <div class="row-container" style="height: 90px">
+                <text class="text-title">版本号</text>
+                <text class="text-content" style="flex-wrap: wrap; width: 250px">
+                  {{ versionCode }}
+                </text>
+              </div>
+              <div class="row-container" style="height: 90px">
+                <text class="text-title">序列号</text>
+                <text class="text-content" style="flex-wrap: wrap; width: 250px">{{ serial }}</text>
+              </div>
+            </div>
+          </div>
+        </scroll>
+      </div>
+    </div>
+  </template>
+  
+  <script>
+  import storage from "@system.storage"
+  import vibrator from "@system.vibrator"
+  import app from "@system.app"
+  import focusDB from "../../database/focusDB"
+  import router from "@system.router"
+  import device from "@system.device"
+  import Nav from "../../nav/nav"
+  
+  export default {
+    private: {
+      name: null,
+      versionName: null,
+      versionCode: null,
+      packageName: null,
+      deviceId: null,
+      serial: null
+    },
+  
+    computed: {},
+  
+    async onInit() {
+      console.log("页面初始化开始")
+      console.log(JSON.stringify(app.getInfo()))
+  
+      device.getDeviceId({
+        success: function (data) {
+          console.log(`handling success: ${data.deviceId}`)
+          this.deviceId = data.deviceId
+        },
+        fail: function (data, code) {
+          console.log(`handling fail, code = ${code}`)
+        }
+      })
+  
+      device.getSerial({
+        success: (data) => {
+          console.log(`handling success: ${data.serial}`)
+          this.serial = data.serial
+        },
+        fail: (data, code) => {
+          console.log(`handling fail, code = ${code}`)
+        }
+      })
+  
+      this.name = app.getInfo().name
+      this.versionName = app.getInfo().versionName
+      this.versionCode = app.getInfo().versionCode
+      this.packageName = app.getInfo().packageName
+    },
+  
+    onDestroy() {
+      console.log("页面销毁，清除计时器")
+      this.clearTimer()
+    },
+  
+    toPage(eve) {
+      switch (eve.direction) {
+        case "left":
+          console.log("左滑")
+          break
+        case "right":
+          console.log("右滑")
+          this.toPre()
+          break
+        case "up":
+          console.log("上滑")
+          break
+        case "down":
+          console.log("下滑")
+          Nav.navIndex()
+          break
+      }
+    },
+  
+    toExit() {
+      this.$app.exit()
+    },
+  
+    toPre() {
+      router.back()
+    },
+  
+    toDetail() {
+      Nav.navDetail()
+    },
+  
+    resetDB() {
+      console.log("开始重置")
+      focusDB.resetDatabase()
+    }
+  }
+  </script>
+  
+  <style>
+  /* 页面 */
+  .page {
+    flex-direction: column;
+    height: 100%;
+    background-color: #000000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+  }
+  
+  .list-container {
+    width: 100%;
+    flex-direction: column;
+    justify-content: space-around;
+    align-content: center;
+    align-items: center;
+  }
+  
+  .row-container {
+    width: 100%;
+    border-radius: 35px;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .text-content {
+    font-size: 36px;
+    color: #ffffff;
+    font-weight: bold;
+  }
+  
+  .text-title {
+    font-size: 36px;
+    color: #747474;
+  }
+  
+  /* 顶栏 */
+  .top {
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .btn {
+    height: 100px;
+    width: 100px;
+    border-radius: 50px;
+    border: 5px solid #ffffff70;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+  }
+  
+  .blank {
+    height: 100px;
+    width: 100px;
+  }
+  
+  .btn-icon {
+    height: 80px;
+    width: 80px;
+  }
+  
+  .title {
+    font-size: 48px;
+    color: #ffffff;
+    font-weight: bold;
+    text-align: center;
+  }
+  
+  /* 操作按钮区域 */
+  .detail-container {
+    margin-top: 60px;
+    width: 100%;
+    height: 585px;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+  </style>
+  
