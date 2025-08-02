@@ -9,8 +9,12 @@
     </div>
     <!-- 顶部大数字显示 -->
     <text class="current-minute">{{ traditionalTime }}</text>
+    <!-- 名言显示 -->
+    <!-- 9pro不支持fetch，暂时取消 -->
+    <div style="height: 80px; justify-content: center; align-items: center">
+      <text style="color: #ffffff; font-size: 32px"></text>
+    </div>
     <!-- 操作按钮区域 -->
-    <div style="height: 80px;justify-content:center;align-items:center"><text style="color:#ffffff;font-size:32px">{{ title }}</text></div>
     <div class="operate-line">
       <div class="operate-btn" @click="resetDB">
         <image class="btn-logo" src="/common/delete.png"></image>
@@ -75,7 +79,7 @@ export default {
     const that = this
     fetch.fetch({
       url: "https://v2.alapi.cn/api/mingyan?typeid=23&token=LwExDtUWhF3rH5ib",
-      responseType:'json',
+      responseType: "json",
       success: (res) => {
         console.log(`状态: ${res.code}`)
         console.log("响应:", res.data) // 自动解析为JS对象

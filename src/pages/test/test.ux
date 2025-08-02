@@ -1,208 +1,36 @@
 <template>
-  <div class="page" @swipe="toPage">
-    <!-- 顶栏 -->
-    <div class="top">
-      <div class="blank"></div>
-      <!-- 标题 -->
-      <text class="title" style="z-index: 2">测试</text>
-      <div class="blank"></div>
-    </div>
-
-    <!-- 详情 -->
-    <div class="container">
-      <div style="height: 100px">
-        <text style="color: #ffffff;font-size:48px">{{ title }}</text>
-      </div>
-      <text style="color: #ffffff" @click="fetchAI">按键</text>
-    </div>
+  <div class="page">
+    <div class="div {{otherClass}}"></div>
   </div>
 </template>
 
 <script>
-import vibrator from "@system.vibrator"
-import prompt from "@system.prompt"
-import router from "@system.router"
-import fetch from "@system.fetch"
-
-export default {
-  private: {
-    title:"無"
-  },
-
-  computed: {},
-
-  async onInit() {
-    console.log("页面初始化开始")
-  },
-
-  toPage(eve) {
-    switch (eve.direction) {
-      case "left":
-        console.log("左滑")
-        break
-      case "right":
-        console.log("右滑")
-        this.toPre()
-        break
-      case "up":
-        console.log("上滑")
-        break
-      case "down":
-        console.log("下滑")
-        break
+  export default {
+    data: {
+      otherClass: ""
+    },
+    onShow() {
+      const that = this
+      setTimeout(() => {
+        that.otherClass = "new-width"
+      }, 500);
     }
-  },
-
-  toExit() {
-    this.$app.exit()
-  },
-
-  toPre() {
-    router.back()
-  },
-
-  btnVibrate() {
-    vibrator.vibrate({
-      mode: "short"
-    })
-  },
-
-  display(msg) {
-    this.btnVibrate()
-    prompt.showToast({
-      message: msg,
-      duration: 3000
-    })
-  },
-
-  fetchAI() {
-    const that = this
-    fetch.fetch({
-      url: "https://v2.alapi.cn/api/mingyan?typeid=23&token=LwExDtUWhF3rH5ib",
-      responseType:'json',
-      success: (res) => {
-        console.log(`状态: ${res.code}`)
-        console.log("响应:", res.data) // 自动解析为JS对象
-        const statistic = res.data
-        that.title = statistic.data.content
-        console.log(`title：${that.title}`)
-      },
-      fail: (err) => {
-        console.error(`错误: ${err.code} - ${err.data}`)
-      }
-    })
-  }
-}
+  };
 </script>
 
 <style>
-/* 页面 */
 .page {
-  flex-direction: column;
-  height: 100%;
-  background-color: #000000;
+  padding: 60px;
   align-items: center;
-  padding: 20px;
-  position: relative;
 }
-
-.note-container {
-  width: 100%;
+.div {
+  width: 100px;
   height: 200px;
-  border: 5px solid #ffffff80;
-  border-radius: 35px;
-  flex-direction: column;
-  padding: 20px;
-  margin-bottom: 20px;
+  opacity: 0;
+  background-color: red;
+  transition: opacity 2000ms ease-in 500ms;
 }
-
-.note-from {
-  width: 100%;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.text-content {
-  font-size: 36px;
-  color: #ffffff;
-  font-weight: bold;
-}
-
-/* 顶栏 */
-.top {
-  position: absolute;
-  top: 20px;
-  width: 100%;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.btn {
-  height: 100px;
-  width: 100px;
-  border-radius: 50px;
-  border: 5px solid #ffffff70;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-}
-
-.blank {
-  height: 100px;
-  width: 100px;
-}
-
-.btn-icon {
-  height: 80px;
-  width: 80px;
-}
-
-.title {
-  font-size: 48px;
-  color: #ffffff;
-  font-weight: bold;
-  text-align: center;
-}
-
-/* 滚动列表 */
-.scroll-container {
-  margin-top: 60px;
-  width: 100%;
-  height: 585px;
-  flex-direction: column;
-  box-sizing: border-box;
-  justify-content: flex-start;
-  align-items: flex-start;
-}
-
-.subtitle {
-  justify-content: center;
-  align-items: center;
-  width: 30%;
-  height: 64px;
-  background-color: #ffffff52;
-  border-radius: 35px;
-  padding: 10px;
-  margin-top: 50px;
-  margin-bottom: 30px;
-}
-
-.today-detail {
-  margin: 10px;
-  padding: 10px;
-  flex-direction: column;
-}
-
-.chart-container {
-  flex-direction: column;
-  padding: 10px;
-}
-
-.container {
-  margin-top: 100px;
-  flex-direction: column;
-  padding: 10px;
+.new-width {
+  opacity: 1;
 }
 </style>

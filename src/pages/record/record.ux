@@ -15,10 +15,8 @@
       <!-- 记录列表 -->
       <list class="record-list" elif="{{ !isLoading && records.length != 0 }}">
         <list-item for="{{ records }}" type="record" class="record-item">
-          <div class="record-header">
             <text class="record-date">{{ $item.date }}</text>
             <text class="record-total" style="color:#ffffff70">{{ $item.total }}分</text>
-          </div>
           <!-- <div class="record-details">
             <div class="session" for="{{ $item.sessions }}">
               <text class="session-time">{{ $item.startTime }} - {{ $item.endTime }}</text>
@@ -206,7 +204,6 @@ export default {
   flex-grow: 1;
   width: 100%;
   flex-direction: column;
-  
   justify-content: flex-start;
   align-items: center;
 }
@@ -222,8 +219,9 @@ export default {
 
 .record-item {
   height: 100px;
-  flex-direction: column;
-  justify-content: flex-start;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
   border-radius: 35px;
   border: 5px solid #ffffff70;
   padding: 15px;

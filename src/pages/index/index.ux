@@ -6,10 +6,10 @@
         <image class="btn-icon" src="/common/back.png"></image>
       </div>
       <!-- 今日累计时间 -->
-      <text class="today-total">{{ totalTime }}</text>
+      <text class="today-total {{otherClass}}">{{ totalTime }}</text>
       <div class="btn" @click="toDetail">
         <image class="btn-icon" src="/common/set.png"></image>
-      </div>
+      </div> 
     </div>
     <!-- 顶部大数字显示 -->
     <text class="current-minute">{{ traditionalTime }}</text>
@@ -39,15 +39,21 @@ import prompt from "@system.prompt"
 import focusDB from "../../database/focusDB"
 import Nav from "../../nav/nav"
 
+// UI无关变量
+const someObj = {
+   modeNum: 2, //模式数量
+  } // 推荐写法
+
+
 export default {
   private: {
-    modeNum: 2, //模式数量
     currentMode: 0, //当前模式（0、1、2）
     currentTime: 0, // 当前专注时长（秒）
     currentMinute: 0, // 当前分钟数（分）
     todayTotal: 0, // 今日累计专注时间（分钟）
     isRunning: false, // 是否正在计时
     timerInterval: null, // 计时器ID
+    otherClass: ""
   },
 
   computed: {
@@ -69,6 +75,13 @@ export default {
       return `今日累计 ${time.toFixed(1)} 时`
     }
   },
+
+  onShow() {
+      const that = this
+      setTimeout(() => {
+        that.otherClass = "new-opacity"
+      }, 500);
+    },
 
   async onInit() {
     console.log("页面初始化开始")
@@ -363,6 +376,12 @@ export default {
   color: #ffffff;
   font-weight: bold;
   text-align: center;
+  opacity: 0;
+  transition: opacity 150ms ease-in 0ms;
+}
+
+.new-opacity{
+  opacity: 1;
 }
 
 /* 计时区域 */
