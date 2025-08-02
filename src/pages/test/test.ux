@@ -4,22 +4,17 @@
     <div class="top">
       <div class="blank"></div>
       <!-- 标题 -->
-      <text class="title" style="z-index: 2">通知</text>
+      <text class="title" style="z-index: 2">测试</text>
       <div class="blank"></div>
     </div>
 
     <!-- 详情 -->
-    <scroll class="scroll-container" scroll-y="true" bounces="true">
-      <div class="note-container" @click="display(msg1)">
-        <div class="note-from" style="flex: 1">
-          <text style="color: #ffffff; font-size: 48px; font-weight: bold">更新</text>
-          <text style="color: #747474; font-size: 36px">2025-8-1</text>
-        </div>
-        <text style="color: #ffffff; font-size: 42px; flex: 1; text-overflow: ellipsis">
-          {{ msg1 }}
-        </text>
+    <div class="container">
+      <div style="height: 100px">
+        <text style="color: #ffffff;font-size:48px">{{ title }}</text>
       </div>
-    </scroll>
+      <text style="color: #ffffff" @click="fetchAI">按键</text>
+    </div>
   </div>
 </template>
 
@@ -27,12 +22,11 @@
 import vibrator from "@system.vibrator"
 import prompt from "@system.prompt"
 import router from "@system.router"
-import Nav from "../../nav/nav"
+import fetch from "@system.fetch"
 
 export default {
   private: {
-    msg1: "一禅1.1.0.beta更新日志：1.提供记录的分析功能并实现了分析页面。2.完善通知页面及其信息显示。",
-    title: "更新"
+    title:"無"
   },
 
   computed: {},
@@ -55,7 +49,6 @@ export default {
         break
       case "down":
         console.log("下滑")
-        Nav.navIndex()
         break
     }
   },
@@ -74,17 +67,29 @@ export default {
     })
   },
 
-  display(msg1) {
+  display(msg) {
     this.btnVibrate()
-    prompt.showDialog({
-      title: this.title,
-      message: msg1,
-      buttons: [
-        {
-          text: "btn",
-          color: "#33dd44"
-        }
-      ]
+    prompt.showToast({
+      message: msg,
+      duration: 3000
+    })
+  },
+
+  fetchAI() {
+    const that = this
+    fetch.fetch({
+      url: "https://v2.alapi.cn/api/mingyan?typeid=23&token=LwExDtUWhF3rH5ib",
+      responseType:'json',
+      success: (res) => {
+        console.log(`状态: ${res.code}`)
+        console.log("响应:", res.data) // 自动解析为JS对象
+        const statistic = res.data
+        that.title = statistic.data.content
+        console.log(`title：${that.title}`)
+      },
+      fail: (err) => {
+        console.error(`错误: ${err.code} - ${err.data}`)
+      }
     })
   }
 }
@@ -134,9 +139,24 @@ export default {
   align-items: center;
 }
 
+.btn {
+  height: 100px;
+  width: 100px;
+  border-radius: 50px;
+  border: 5px solid #ffffff70;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
 .blank {
   height: 100px;
   width: 100px;
+}
+
+.btn-icon {
+  height: 80px;
+  width: 80px;
 }
 
 .title {
@@ -153,5 +173,36 @@ export default {
   height: 585px;
   flex-direction: column;
   box-sizing: border-box;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.subtitle {
+  justify-content: center;
+  align-items: center;
+  width: 30%;
+  height: 64px;
+  background-color: #ffffff52;
+  border-radius: 35px;
+  padding: 10px;
+  margin-top: 50px;
+  margin-bottom: 30px;
+}
+
+.today-detail {
+  margin: 10px;
+  padding: 10px;
+  flex-direction: column;
+}
+
+.chart-container {
+  flex-direction: column;
+  padding: 10px;
+}
+
+.container {
+  margin-top: 100px;
+  flex-direction: column;
+  padding: 10px;
 }
 </style>

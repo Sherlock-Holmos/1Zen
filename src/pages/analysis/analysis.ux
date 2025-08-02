@@ -1,0 +1,454 @@
+<template>
+  <div class="page" @swipe="toPage">
+    <!-- 顶栏 -->
+    <div class="top">
+      <div class="blank"></div>
+      <!-- 标题 -->
+      <text class="title" style="z-index: 2">分析</text>
+      <div class="blank"></div>
+    </div>
+    <!-- 加载状态 -->
+    <div class="loading-state" if="{{ isLoading }}">
+      <progress type="circular" class="loading-progress"></progress>
+      <text class="loading-text">加载记录中...</text>
+    </div>
+
+    <!-- 详情 -->
+    <scroll class="scroll-container" scroll-y="true" bounces="true" elif="{{ !isLoading }}">
+      <div class="subtitle">
+        <text style="color: #ffffff; font-size: 48px">今日</text>
+      </div>
+      <div class="today-detail">
+        <text style="color: #ffffff; font-size: 48px">专注时长 {{ todayTime }} 时</text>
+        <text style="color: #ffffff; font-size: 48px">专注次数 {{ todayNum }} 次</text>
+      </div>
+      <div class="comment-container">
+        <image style="height: 90px; width: 90px" src="/common/comment.png"></image>
+        <text style="color: #ffffff52; font-size: 36px; font-weight: bold">
+          专注时长比昨日{{ timeCompare }}，专注次数比昨日{{ numCompare }}，{{ comment }}
+        </text>
+      </div>
+      <div class="subtitle">
+        <text style="color: #ffffff; font-size: 48px">变化</text>
+      </div>
+      <div class="chart-container">
+        <div style="flex-direction: row">
+          <div style="width: 24px; flex-direction: column; justify-content: space-between">
+            <text style="color: #ffffff; font-size: 24px">9</text>
+            <text style="color: #ffffff; font-size: 24px">0</text>
+          </div>
+          <chart
+            style="width: 360px"
+            type="line"
+            options="{{ lineOpts }}"
+            datasets="{{ lineData }}"
+          ></chart>
+        </div>
+        <div style="flex-direction: row; justify-content: space-between">
+          <text style="color: #ffffff; font-size: 24px">{{ agoDate }}</text>
+          <text style="color: #ffffff; font-size: 24px">{{ todayDate }}</text>
+        </div>
+        <div style="justify-content: center">
+          <text style="font-size: 32px; color: #ffffff">七日专注变化</text>
+        </div>
+        <div class="comment-container">
+          <image style="height: 90px; width: 90px" src="/common/comment.png"></image>
+          <text style="color: #ffffff52; font-size: 36px; font-weight: bold">
+            {{ weekComment }}
+          </text>
+        </div>
+      </div>
+    </scroll>
+  </div>
+</template>
+
+<script>
+import vibrator from "@system.vibrator"
+import prompt from "@system.prompt"
+import router from "@system.router"
+import Nav from "../../nav/nav"
+import focusDB from "../../database/focusDB"
+
+export default {
+  private: {
+    isLoading: true, // 添加加载状态
+    todayNum: -1, //今日专注次数
+    todayTime: -1, //今日专注时长
+    yesterdayTime: -1, //昨日专注时长
+    yesterdayNum: -1,
+    lastweekAverageTime: 2, //上周专注平均时长
+    agoDate: 7.26,
+    todayDate: 8.1,
+
+    lineData: [
+      {
+        strokeColor: "#ff0000",
+        data: [3, 6, 4, 6, 3, 5, 4]
+      },
+      {
+        strokeColor: "#00ff00",
+        data: [3, 6, 4, 6, 3, 5, 4]
+      }
+    ],
+    lineOpts: {
+      xAxis: {
+        min: 0,
+        max: 7,
+        display: true,
+        axisTick: 7
+      },
+      yAxis: {
+        min: 0,
+        max: 9,
+        display: true
+      }
+    }
+  },
+
+  computed: {
+    timeCompare() {
+      if (this.todayTime > this.yesterdayTime) {
+        const diff = (this.todayTime - this.yesterdayTime).toFixed(1)
+        return `多${diff}时`
+      } else if (this.todayTime == this.yesterdayTime) {
+        return `持平`
+      } else {
+        const diff = (this.yesterdayTime - this.todayTime).toFixed(1)
+        return `少${diff}时`
+      }
+    },
+
+    numCompare() {
+      if (this.todayNum > this.yesterdayNum) {
+        const diff = this.todayNum - this.yesterdayNum
+        return `多${diff}次`
+      } else if (this.todayNum == this.yesterdayNum) {
+        return `持平`
+      } else {
+        const diff = this.yesterdayNum - this.todayNum
+        return `少${diff}次`
+      }
+    },
+
+    comment() {
+      if (this.todayTime > this.yesterdayTime) {
+        if (this.todayNum <= this.yesterdayNum) {
+          return `专注沉浸质量提高`
+        } else {
+          return `专注力提高`
+        }
+      } else {
+        if (this.todayNum <= this.yesterdayNum) {
+          return `专注力降低`
+        } else {
+          return `专注沉浸质量降低`
+        }
+      }
+    },
+
+    weekComment() {
+      // 确保有完整的数据
+      if (!this.lineData || this.lineData.length === 0 || this.lineData[0].data.length < 7) {
+        return "暂无足够数据生成周报"
+      }
+
+      const weeklyData = this.lineData[0].data
+
+      // 计算关键指标
+      const totalHours = weeklyData.reduce((sum, val) => sum + val, 0)
+      const averageHours = (totalHours / 7).toFixed(1)
+
+      // 1. 零数据处理逻辑
+      if (totalHours <= 0) {
+        return "本周暂无专注记录，尝试开启一个专注计划开启你的专注之旅吧！"
+      }
+
+      // 获取七天的专注次数数据（需要提前存储）
+      const sessionData = this.weekSessionData // 假设这是提前存储的专注次数数组
+      const totalSessions = sessionData?.reduce((sum, val) => sum + val, 0) || 0
+      const averageSessions = sessionData ? (totalSessions / 7).toFixed(1) : "0.0"
+
+      // 2. 合理的趋势分析（使用加权平均）
+      const weightedTrend =
+        weeklyData.slice(0, 3).reduce((sum, val) => sum + val * 0.8, 0) / 3 +
+        weeklyData.slice(4).reduce((sum, val) => sum + val * 1.2, 0) / 3
+      const trendDirection = weightedTrend > 0 ? "上升" : "下降"
+      const trendStrength = Math.abs(weightedTrend) > 1.5 ? "显著" : "轻微"
+
+      // 3. 改进的峰值检测（排除零值）
+      const validDays = weeklyData.filter((h) => h > 0)
+      const maxDayValue = validDays.length > 0 ? Math.max(...validDays) : 0
+      const maxDayIndex = maxDayValue > 0 ? weeklyData.indexOf(maxDayValue) + 1 : 0
+
+      // 4. 自然语言生成
+      const dateLabels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+
+      // 构建评论
+      let report = `本周专注时长总计 ${totalHours} 小时，平均每天 ${averageHours} 小时。`
+
+      // 趋势分析
+      if (validDays.length >= 4) {
+        report += `专注时长呈${trendStrength}${trendDirection}趋势，`
+      } else if (validDays.length > 0) {
+        report += "专注时长波动较大，"
+      }
+
+      // 峰值分析
+      if (maxDayValue > 0) {
+        if (maxDayValue / averageHours > 1.5) {
+          report += `${dateLabels[maxDayIndex - 1]}表现突出（${maxDayValue}小时）`
+        } else if (maxDayValue > 0) {
+          report += `${dateLabels[maxDayIndex - 1]}是专注最佳日（${maxDayValue}小时）`
+        }
+      }
+
+      // 频率和总体评价
+      report += "。专注频率："
+      if (averageSessions >= 3) {
+        report += `保持良好习惯（平均${averageSessions}次/天）。`
+      } else if (averageSessions >= 1) {
+        report += `有进步空间（平均${averageSessions}次/天）。`
+      } else {
+        report += `可以尝试增加专注次数。`
+      }
+
+      // 激励性结语
+      if (totalHours > 20) {
+        report += " 本周专注度非常出色！继续保持！"
+      } else if (totalHours > 10) {
+        report += " 本周专注表现良好！继续加油！"
+      } else {
+        report += " 专注的旅程始于第一步，期待你下周的表现！"
+      }
+
+      return report
+    }
+  },
+
+  async onInit() {
+    try {
+      // 加载页面
+      this.isLoading = true
+
+      focusDB.setLogging(false)
+      console.log("页面初始化开始")
+      await focusDB.init()
+
+      // 创建七天的日期数组（包括今天）
+      const sevenDays = Array.from({length: 7}, (_, i) => {
+        const date = new Date()
+        date.setDate(date.getDate() - (6 - i)) // 从六天前到今天
+        return date.toISOString().split("T")[0] // 格式化为'YYYY-MM-DD'
+      })
+
+      // 合并查询：一次获取所有数据
+      const chartData = sevenDays.map((date) => {
+        const daySummary = focusDB.getDaySummary(date) || {total: 0, sessionCount: 0}
+
+        return {
+          hours: parseFloat((daySummary.total / 60).toFixed(1)),
+          count: daySummary.sessionCount
+        }
+      })
+
+      // 分离数据
+      const timeData = chartData.map((item) => item.hours)
+      const numData = chartData.map((item) => item.count)
+
+      // 更新折线图数据（添加类型检查）
+      if (this.lineData.length >= 2) {
+        this.lineData[0].data = timeData
+        this.lineData[1].data = numData
+      } else {
+        console.error("折线图数据结构不完整")
+      }
+
+      // 绑定私有数据
+      this.todayTime = this.lineData[0].data[6]
+      this.todayNum = this.lineData[1].data[6]
+
+      this.yesterdayTime = this.lineData[0].data[5]
+      this.yesterdayNum = this.lineData[1].data[5]
+
+      console.log(this.lineData)
+    } catch (err) {
+      console.error("加载记录失败", err)
+    } finally {
+      this.isLoading = false
+    }
+  },
+
+  toPage(eve) {
+    switch (eve.direction) {
+      case "left":
+        console.log("左滑")
+        break
+      case "right":
+        console.log("右滑")
+        this.toPre()
+        break
+      case "up":
+        console.log("上滑")
+        break
+      case "down":
+        console.log("下滑")
+        break
+    }
+  },
+
+  toExit() {
+    this.$app.exit()
+  },
+
+  toPre() {
+    router.back()
+  },
+
+  btnVibrate() {
+    vibrator.vibrate({
+      mode: "short"
+    })
+  },
+
+  display(msg) {
+    this.btnVibrate()
+    prompt.showToast({
+      message: msg,
+      duration: 3000
+    })
+  }
+}
+</script>
+
+<style>
+/* 页面 */
+.page {
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  background-color: #000000;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+  transition: opacity 0.3s ease-in-out; /* 添加过渡效果 */
+}
+
+.note-container {
+  width: 100%;
+  height: 200px;
+  border: 5px solid #ffffff80;
+  border-radius: 35px;
+  flex-direction: column;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.note-from {
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.text-content {
+  font-size: 36px;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+/* 顶栏 */
+.top {
+  position: absolute;
+  top: 20px;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn {
+  height: 100px;
+  width: 100px;
+  border-radius: 50px;
+  border: 5px solid #ffffff70;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+.blank {
+  height: 100px;
+  width: 100px;
+}
+
+.btn-icon {
+  height: 80px;
+  width: 80px;
+}
+
+.title {
+  font-size: 48px;
+  color: #ffffff;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* 滚动列表 */
+.scroll-container {
+  margin-top: 60px;
+  width: 100%;
+  height: 585px;
+  flex-direction: column;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.subtitle {
+  justify-content: center;
+  align-items: center;
+  width: 30%;
+  height: 64px;
+  background-color: #ffffff52;
+  border-radius: 35px;
+  padding: 10px;
+  margin-top: 50px;
+  margin-bottom: 30px;
+}
+
+.today-detail {
+  margin: 10px;
+  padding: 10px;
+  flex-direction: column;
+}
+
+.chart-container {
+  flex-direction: column;
+  padding: 10px;
+}
+
+.comment-container {
+  flex-direction: column;
+  padding: 10px;
+}
+
+/* 加载状态样式 */
+.loading-state {
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-progress {
+  width: 100px;
+  height: 100px;
+  color: #173618; /* 绿色加载进度 */
+}
+
+.loading-text {
+  font-size: 32px;
+  color: #aaaaaa;
+  margin-top: 20px;
+}
+</style>

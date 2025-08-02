@@ -1,13 +1,11 @@
 {
   "package": "com.holmes.watch.1zen",
   "name": "一禅",
-  "versionName": "1.0.0.beta",
+  "versionName": "1.1.0.beta",
   "versionCode": 1,
   "minPlatformVersion": 1000,
-  "icon": "/common/1Zen.png",
-  "deviceTypeList": [
-    "watch"
-  ],
+  "icon": "/common/1Zen.jpg",
+  "deviceTypeList": ["watch"],
   "features": [
     {
       "name": "system.router"
@@ -19,7 +17,13 @@
       "name": "system.vibrator"
     },
     {
-      "name":"system.device"
+      "name": "system.device"
+    },
+    {
+      "name": "system.prompt"
+    },
+    { 
+      "name": "system.fetch" 
     }
   ],
   "config": {
@@ -43,11 +47,17 @@
       },
       "pages/note": {
         "component": "note"
+      },
+      "pages/analysis":{
+        "component": "analysis"
+      },
+      "pages/test":{
+        "component": "test"
       }
     }
   },
   "permissions": [
-    { "name": "hapjs.permission.DEVICE_INFO" },
-    { "name": "hapjs.permission.DEVICE_INFO" }
+    {"name": "hapjs.permission.DEVICE_INFO"},
+    {"name": "hapjs.permission.DEVICE_INFO"}
   ]
 }

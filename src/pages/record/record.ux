@@ -17,7 +17,7 @@
         <list-item for="{{ records }}" type="record" class="record-item">
           <div class="record-header">
             <text class="record-date">{{ $item.date }}</text>
-            <text class="record-total">{{ $item.total }}分钟</text>
+            <text class="record-total" style="color:#ffffff70">{{ $item.total }}分</text>
           </div>
           <!-- <div class="record-details">
             <div class="session" for="{{ $item.sessions }}">
@@ -87,13 +87,13 @@ export default {
         break
       case "right":
         console.log("右滑")
+        this.toPre()
         break
       case "up":
         console.log("上滑")
         break
       case "down":
         console.log("下滑")
-        Nav.navIndex()
         break
     }
   },
@@ -112,7 +112,6 @@ export default {
   height: 100%;
   background-color: #000000;
   align-items: center;
-  justify-content: center;
   padding: 20px;
   position: relative;
   transition: opacity 0.3s ease-in-out;
@@ -207,6 +206,8 @@ export default {
   flex-grow: 1;
   width: 100%;
   flex-direction: column;
+  
+  justify-content: flex-start;
   align-items: center;
 }
 
@@ -215,6 +216,8 @@ export default {
   flex-grow: 1;
   width: 100%;
   margin-top: 120px;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .record-item {

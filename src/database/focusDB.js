@@ -328,6 +328,96 @@ class FocusDatabase {
     })
   }
 
+
+  
+  /**
+   * 获取当日专注数据摘要
+   * @returns {Object} 包含当日总时长(todayTotal)和专注次数(sessionCount)的对象
+   */
+  getTodaySummary() {
+    // 获取当前日期（YYYY-MM-DD格式）
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (!this.database) {
+      this.error("数据库未初始化", new Error("请先调用init()方法初始化数据库"));
+      return { todayTotal: 0, sessionCount: 0 };
+    }
+
+    this.log(`查询当日专注摘要 ${today}`);
+
+    // 查找当天的记录
+    const todayRecord = this.database.records.find(
+      record => record.date === today
+    );
+
+    if (todayRecord) {
+      // 打印调试信息
+      this.log(`找到当日记录: ${today}`, {
+        total: todayRecord.total,
+        sessions: todayRecord.sessions.length
+      });
+      
+      return {
+        todayTotal: todayRecord.total,
+        sessionCount: todayRecord.sessions.length
+      };
+    }
+    
+    this.log(`当日(${today})无专注记录`);
+    return { todayTotal: -1, sessionCount: -1 };
+  }
+
+
+    /**
+   * 获取指定日期的专注数据摘要
+   * @param {string|Date} date - 要查询的日期（字符串格式为YYYY-MM-DD，或Date对象）
+   * @returns {Object} 包含总时长(total)和专注次数(sessionCount)的对象
+   */
+    getDaySummary(date) {
+      // 处理日期参数
+      let targetDate;
+      console.log("检测输入")
+      if (typeof date === 'string') {
+        console.log("string格式")
+        targetDate = date;
+      } else if (date instanceof Date) {
+        console.log("date格式")
+        targetDate = date.toISOString().split('T')[0];
+      } else {
+        console.log("格式无效")
+        this.error("无效日期参数", new Error("参数必须是字符串或Date对象"));
+        return { total: 0, sessionCount: 0 };
+      }
+      
+      if (!this.database) {
+        this.error("数据库未初始化", new Error("请先调用init()方法初始化数据库"));
+        return { total: 0, sessionCount: 0 };
+      }
+      console.log("查询记录")
+  
+      this.log(`查询日期: ${targetDate}`);
+  
+      // 查找指定日期的记录
+      const dayRecord = this.database.records.find(
+        record => record.date === targetDate
+      );
+  
+      if (dayRecord) {
+        this.log(`找到记录: ${targetDate}`, {
+          total: dayRecord.total,
+          sessions: dayRecord.sessions.length
+        });
+        
+        return {
+          total: dayRecord.total,
+          sessionCount: dayRecord.sessions.length
+        };
+      }
+      
+      this.log(`日期(${targetDate})无专注记录`);
+      return { total: 0, sessionCount: 0 };
+    }
+
   // 启用/禁用日志
   setLogging(enabled) {
     this.logEnabled = enabled

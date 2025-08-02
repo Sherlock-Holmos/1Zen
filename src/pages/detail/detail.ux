@@ -10,6 +10,7 @@
     <!-- 顶部大数字显示 -->
     <text class="current-minute">{{ traditionalTime }}</text>
     <!-- 操作按钮区域 -->
+    <div style="height: 80px;justify-content:center;align-items:center"><text style="color:#ffffff;font-size:32px">{{ title }}</text></div>
     <div class="operate-line">
       <div class="operate-btn" @click="resetDB">
         <image class="btn-logo" src="/common/delete.png"></image>
@@ -21,11 +22,11 @@
       </div>
     </div>
     <div class="operate-line">
-      <div class="operate-btn" @click="resetDB">
+      <div class="operate-btn" @click="todo">
         <image class="btn-logo" src="/common/sign.png"></image>
         <text class="subtitle">签到</text>
       </div>
-      <div class="operate-btn" @click="toggleTimer">
+      <div class="operate-btn" @click="todo">
         <image class="btn-logo" src="/common/task.png"></image>
         <text class="subtitle">任务</text>
       </div>
@@ -35,17 +36,17 @@
         <image class="btn-logo" src="/common/note.png"></image>
         <text class="subtitle">通知</text>
       </div>
-      <div class="operate-btn" @click="toggleTimer">
+      <div class="operate-btn" @click="toRecord">
         <image class="btn-logo" src="/common/analysis.png"></image>
-        <text class="subtitle">分析</text>
+        <text class="subtitle">记录</text>
       </div>
     </div>
     <div class="operate-line">
-      <div class="operate-btn" @click="resetDB">
+      <div class="operate-btn" @click="todo">
         <image class="btn-logo" src="/common/achievement.png"></image>
         <text class="subtitle">成就</text>
       </div>
-      <div class="operate-btn" @click="toggleTimer">
+      <div class="operate-btn" @click="todo">
         <image class="btn-logo" src="/common/bag.png"></image>
         <text class="subtitle">背包</text>
       </div>
@@ -54,19 +55,38 @@
 </template>
 
 <script>
-import storage from "@system.storage"
 import vibrator from "@system.vibrator"
 import focusDB from "../../database/focusDB"
 import router from "@system.router"
+import prompt from "@system.prompt"
+import fetch from "@system.fetch"
 import Nav from "../../nav/nav"
 
 export default {
-  private: {},
+  private: {
+    title: null
+  },
 
   computed: {},
 
   async onInit() {
     console.log("页面初始化开始")
+
+    const that = this
+    fetch.fetch({
+      url: "https://v2.alapi.cn/api/mingyan?typeid=23&token=LwExDtUWhF3rH5ib",
+      responseType:'json',
+      success: (res) => {
+        console.log(`状态: ${res.code}`)
+        console.log("响应:", res.data) // 自动解析为JS对象
+        const statistic = res.data
+        that.title = statistic.data.content
+        console.log(`title：${that.title}`)
+      },
+      fail: (err) => {
+        console.error(`错误: ${err.code} - ${err.data}`)
+      }
+    })
   },
 
   onDestroy() {
@@ -109,13 +129,43 @@ export default {
     Nav.navDetail()
   },
 
-  toNote(){
+  toNote() {
+    this.btnVibrate()
     Nav.navNote()
   },
 
+  toAnalysis() {
+    this.btnVibrate()
+    Nav.navAnalysis()
+  },
+
+  toRecord() {
+    this.btnVibrate()
+    Nav.navRecord()
+  },
+
+  btnVibrate() {
+    vibrator.vibrate({
+      mode: "short"
+    })
+  },
+
+  todo() {
+    this.btnVibrate()
+    prompt.showToast({
+      message: "待完成",
+      duration: 1500
+    })
+  },
+
   resetDB() {
+    this.btnVibrate()
     console.log("开始重置")
     focusDB.resetDatabase()
+    prompt.showToast({
+      message: "重置成功",
+      duration: 1500
+    })
   }
 }
 </script>

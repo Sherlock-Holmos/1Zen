@@ -31,4 +31,16 @@ export default class Nav {
       uri: "/pages/note"
     });
   }
+
+  static navAnalysis(){
+    router.push({
+      uri:"/pages/analysis"
+    })
+  }
+  
+  static navTest(){
+    router.push({
+      uri:"/pages/test"
+    })
+  }
 }

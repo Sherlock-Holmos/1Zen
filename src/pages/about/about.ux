@@ -4,7 +4,7 @@
       <div class="top">
         <div class="blank"></div>
         <!-- 标题 -->
-        <text class="title" style="z-index:2">通知</text>
+        <text class="title" style="z-index:2">关于</text>
         <div class="blank"></div>
       </div>
   
@@ -13,10 +13,11 @@
         <scroll class="detail-container" scroll-y="true" bounces="true">
           <div class="row-container" style="border: 5px solid #ffffff80">
             <div style="flex-direction: column; justify-content: space-around; height: 200px">
-              <text class="text-content">{{ name }}</text>
+              <text style="color:#ffffff;font-size:48px">{{ name }}</text>
               <text class="text-title">{{ versionName }}</text>
+              <text style="color:#ffffff;font-size:32px">至虚极，守静笃</text>
             </div>
-            <image style="z-index:-1" src="/common/1Zen.png"></image>
+            <image style="z-index:-1" src="/common/1Zen.jpg"></image>
           </div>
           <div class="row-container" style="height: 100px; border: 5px solid #ffffff80">
             <text class="text-title">作者</text>
@@ -48,10 +49,8 @@
   </template>
   
   <script>
-  import storage from "@system.storage"
   import vibrator from "@system.vibrator"
   import app from "@system.app"
-  import focusDB from "../../database/focusDB"
   import router from "@system.router"
   import device from "@system.device"
   import Nav from "../../nav/nav"
@@ -98,11 +97,6 @@
       this.packageName = app.getInfo().packageName
     },
   
-    onDestroy() {
-      console.log("页面销毁，清除计时器")
-      this.clearTimer()
-    },
-  
     toPage(eve) {
       switch (eve.direction) {
         case "left":
@@ -128,15 +122,6 @@
   
     toPre() {
       router.back()
-    },
-  
-    toDetail() {
-      Nav.navDetail()
-    },
-  
-    resetDB() {
-      console.log("开始重置")
-      focusDB.resetDatabase()
     }
   }
   </script>
