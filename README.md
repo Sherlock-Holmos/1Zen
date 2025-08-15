@@ -19,6 +19,7 @@
 ![基本功能页](./demo/demo1.png)
 ![专注分析页1](./demo/demo2.png)
 ![专注分析页2](./demo/demo3.png)
+![菜单页面](./demo/demo4.png)
 
 更多内容请编译安装体验
 
