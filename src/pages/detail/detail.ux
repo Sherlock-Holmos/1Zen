@@ -4,16 +4,12 @@
     <div class="top">
       <div class="blank"></div>
       <!-- 标题 -->
-      <text class="title">更多</text>
+      <div class="liquid-glass">
+        <text class="title">更多</text>
+      </div>
       <div class="blank"></div>
     </div>
-    <!-- 顶部大数字显示 -->
-    <text class="current-minute">{{ traditionalTime }}</text>
-    <!-- 名言显示 -->
-    <!-- 9pro不支持fetch，暂时取消 -->
-    <div style="height: 80px; justify-content: center; align-items: center">
-      <text style="color: #ffffff; font-size: 32px"></text>
-    </div>
+
     <!-- 操作按钮区域 -->
     <div class="operate-line">
       <div class="operate-btn" @click="resetDB">
@@ -60,43 +56,19 @@
 
 <script>
 import vibrator from "@system.vibrator"
-import focusDB from "../../database/focusDB"
 import router from "@system.router"
 import prompt from "@system.prompt"
 import fetch from "@system.fetch"
+import focusDB from "../../database/focusDB"
 import Nav from "../../nav/nav"
 
 export default {
-  private: {
-    title: null
-  },
-
-  computed: {},
 
   async onInit() {
     console.log("页面初始化开始")
-
-    const that = this
-    fetch.fetch({
-      url: "https://v2.alapi.cn/api/mingyan?typeid=23&token=LwExDtUWhF3rH5ib",
-      responseType: "json",
-      success: (res) => {
-        console.log(`状态: ${res.code}`)
-        console.log("响应:", res.data) // 自动解析为JS对象
-        const statistic = res.data
-        that.title = statistic.data.content
-        console.log(`title：${that.title}`)
-      },
-      fail: (err) => {
-        console.error(`错误: ${err.code} - ${err.data}`)
-      }
-    })
   },
 
-  onDestroy() {
-    console.log("页面销毁，清除计时器")
-    this.clearTimer()
-  },
+  onDestroy() {},
 
   toPage(eve) {
     switch (eve.direction) {
@@ -115,10 +87,6 @@ export default {
         Nav.navIndex()
         break
     }
-  },
-
-  toExit() {
-    this.$app.exit()
   },
 
   toPre() {
@@ -154,6 +122,7 @@ export default {
     })
   },
 
+  // 待完成
   todo() {
     this.btnVibrate()
     prompt.showToast({
@@ -162,6 +131,7 @@ export default {
     })
   },
 
+  // 重置功能
   resetDB() {
     this.btnVibrate()
     console.log("开始重置")
@@ -175,6 +145,8 @@ export default {
 </script>
 
 <style>
+@import url("../../css/liquid.css");
+
 /* 页面 */
 .page {
   flex-direction: column;
@@ -196,24 +168,9 @@ export default {
   align-items: center;
 }
 
-.btn {
-  height: 100px;
-  width: 100px;
-  border-radius: 50px;
-  border: 5px solid #ffffff70;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-}
-
 .blank {
   height: 100px;
   width: 100px;
-}
-
-.btn-icon {
-  height: 80px;
-  width: 80px;
 }
 
 .title {

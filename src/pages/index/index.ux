@@ -1,5 +1,6 @@
 <template>
   <div class="page" @swipe="toPage">
+
     <!-- 顶栏 -->
     <div class="top">
       <div class="btn" @click="toExit">
@@ -11,7 +12,8 @@
         <image class="btn-icon" src="/common/set.png"></image>
       </div> 
     </div>
-    <!-- 顶部大数字显示 -->
+
+    <!-- 计时显示 -->
     <text class="current-minute">{{ traditionalTime }}</text>
 
     <!-- 动画区域 -->
@@ -29,6 +31,7 @@
         <image class="operate-icon" src="/common/stop.png"></image>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -41,19 +44,19 @@ import Nav from "../../nav/nav"
 
 // UI无关变量
 const someObj = {
-   modeNum: 2, //模式数量
   } // 推荐写法
-
 
 export default {
   private: {
+    date:null, // 当前日期
+    modeNum: 2, //模式数量
     currentMode: 0, //当前模式（0、1、2）
     currentTime: 0, // 当前专注时长（秒）
     currentMinute: 0, // 当前分钟数（分）
     todayTotal: 0, // 今日累计专注时间（分钟）
     isRunning: false, // 是否正在计时
     timerInterval: null, // 计时器ID
-    otherClass: ""
+    otherClass: "" // 透明度动画
   },
 
   computed: {
@@ -65,9 +68,9 @@ export default {
     stateMode(){
       switch(this.currentMode){
         case 0:
-          return `标准模式`
+          return `标准`
         case 1:
-          return `休闲模式`
+          return `休闲`
       }
     },
     totalTime(){
@@ -76,25 +79,14 @@ export default {
     }
   },
 
-  onShow() {
-      const that = this
-      setTimeout(() => {
-        that.otherClass = "new-opacity"
-      }, 500);
-    },
-
   async onInit() {
     console.log("页面初始化开始")
 
     // 开启详细日志
     focusDB.setLogging(false)
 
-    this.currentTime = 0
-    this.currentMinute = 0
-
     // 初始化数据库
     try {
-      console.log("开始初始化数据库...")
       await focusDB.init()
       console.log("数据库初始化成功")
       
@@ -105,6 +97,10 @@ export default {
       console.error("数据库初始化失败", err)
     }
   },
+  
+  onReady() {
+    this.otherClass = "new-opacity"
+  },
 
   onDestroy() {
     console.log("页面销毁，清除计时器")
@@ -113,9 +109,8 @@ export default {
 
   loadData() {
     console.log("加载今日累计数据...")
-    // 加载今日累计数据
     const todaySummary = focusDB.getTodaySummary()
-    this.todayTotal = todaySummary.todayTotal
+    this.todayTotal = todaySummary.todayTotal<0?0:todaySummary.todayTotal
   },
 
   toExit() {
@@ -143,6 +138,7 @@ export default {
         break
     }
   },
+
   // 切换模式
   changeMode(eve) {
     switch(eve.direction){
@@ -154,15 +150,6 @@ export default {
         break
     }
   },
-  getModeName(id){
-    switch(id){
-      case 0:
-        return "标准模式"
-      case 1:
-        return "休息模式"
-    }
-  },
-
   modeLeft() {
     if (this.currentMode < this.modeNum-1) {
       this.currentMode = this.currentMode + 1
@@ -170,7 +157,6 @@ export default {
       this.currentMode = this.currentMode - this.modeNum + 1
     }
   },
-
   modeRight() {
     if (this.currentMode > 0) {
       this.currentMode = this.currentMode - 1
@@ -187,14 +173,12 @@ export default {
       this.startTimer()
     }
   },
-
   startTimer() {
     if(this.currentTime > 0) {
       this.startTime = Date.now() - this.currentTime * 1000
     } else {
       this.startTime = Date.now()
     }
-    // 开始计时
     console.log("开始计时")
     this.isRunning = true
 
@@ -203,11 +187,9 @@ export default {
       this.currentMinute = Math.floor(this.currentTime / 60)
     }, 1000)
 
-    // 震动反馈
     vibrator.vibrate({mode: "short"})
     console.log("震动")
   },
-
   pauseTimer() {
     this.isRunning = false
     clearInterval(this.timerInterval)
@@ -215,39 +197,29 @@ export default {
 
   async finishSession() {
     try {
-      console.log("===== 开始执行 finishSession =====")
-      console.log("当前状态:", {
-        isRunning: this.isRunning,
-        currentTime: this.currentTime,
-        currentMinute: this.currentMinute
-      })
-
-      // 暂停计时器
       this.pauseTimer()
       console.log("计时器已暂停")
-
-      // 确保有专注时间
-      if (this.currentTime <= 0) {
-        console.log("当前没有进行中的专注会话，跳过保存")
-        return
-      }
 
       // 计算专注时长
       const sessionMinutes = Math.ceil(this.currentTime / 60)
       console.log(`本次专注时长: ${sessionMinutes}分钟 (${this.currentTime}秒)`)
 
       // 时长不足
-      if(sessionMinutes<5){
-        
-        console.log("时长不够，跳过保存")
-        
+      if(sessionMinutes<=5){
         // 震动反馈
         vibrator.vibrate({mode: "short"})
+
+        if(sessionMinutes<=0){
+          prompt.showToast({
+            message:"未进行计时",
+            duration:3000
+          })
+          return
+        }
 
         // 重置计时器
         this.currentTime = 0
         this.currentMinute = 0
-
         this.clearTimer()
 
         prompt.showToast({
@@ -302,6 +274,15 @@ export default {
       console.log("===== finishSession 执行结束 =====")
     } catch (err) {
       console.error("finishSession 执行出错:", err)
+    }
+  },
+
+  getModeName(id){
+    switch(id){
+      case 0:
+        return "标准模式"
+      case 1:
+        return "休息模式"
     }
   },
 
@@ -377,7 +358,7 @@ export default {
   font-weight: bold;
   text-align: center;
   opacity: 0;
-  transition: opacity 150ms ease-in 0ms;
+  transition: opacity 500ms ease-in 0ms;
 }
 
 .new-opacity{
@@ -398,6 +379,7 @@ export default {
 .anime-img-area {
   margin: 40px;
   flex-direction: column;
+  align-items: center;
 }
 
 .state-mode {

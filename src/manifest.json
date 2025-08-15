@@ -50,9 +50,6 @@
       },
       "pages/analysis":{
         "component": "analysis"
-      },
-      "pages/test":{
-        "component": "test"
       }
     }
   },

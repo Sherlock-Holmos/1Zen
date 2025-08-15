@@ -1,5 +1,6 @@
 <template>
   <div class="page" @swipe="toPage">
+
     <!-- 顶栏 -->
     <div class="top">
       <div class="blank"></div>
@@ -20,6 +21,7 @@
         </text>
       </div>
     </scroll>
+
   </div>
 </template>
 
@@ -34,8 +36,6 @@ export default {
     msg1: "一禅1.1.0.beta更新日志：1.提供记录的分析功能并实现了分析页面。2.完善通知页面及其信息显示。",
     title: "更新"
   },
-
-  computed: {},
 
   async onInit() {
     console.log("页面初始化开始")
@@ -59,11 +59,7 @@ export default {
         break
     }
   },
-
-  toExit() {
-    this.$app.exit()
-  },
-
+  
   toPre() {
     router.back()
   },
@@ -116,12 +112,6 @@ export default {
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-}
-
-.text-content {
-  font-size: 36px;
-  color: #ffffff;
-  font-weight: bold;
 }
 
 /* 顶栏 */

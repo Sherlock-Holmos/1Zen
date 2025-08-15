@@ -4,9 +4,12 @@
     <div class="top">
       <div class="blank"></div>
       <!-- 标题 -->
-      <text class="title" style="z-index: 2">分析</text>
+      <div class="liquid-glass">
+        <text class="title" style="z-index: 2">分析</text>
+      </div>
       <div class="blank"></div>
     </div>
+
     <!-- 加载状态 -->
     <div class="loading-state" if="{{ isLoading }}">
       <progress type="circular" class="loading-progress"></progress>
@@ -28,6 +31,7 @@
           专注时长比昨日{{ timeCompare }}，专注次数比昨日{{ numCompare }}，{{ comment }}
         </text>
       </div>
+
       <div class="subtitle">
         <text style="color: #ffffff; font-size: 48px">变化</text>
       </div>
@@ -63,10 +67,7 @@
 </template>
 
 <script>
-import vibrator from "@system.vibrator"
-import prompt from "@system.prompt"
 import router from "@system.router"
-import Nav from "../../nav/nav"
 import focusDB from "../../database/focusDB"
 
 export default {
@@ -90,6 +91,7 @@ export default {
         data: [3, 6, 4, 6, 3, 5, 4]
       }
     ],
+
     lineOpts: {
       xAxis: {
         min: 0,
@@ -147,7 +149,6 @@ export default {
     },
 
     weekComment() {
-      // 确保有完整的数据
       if (!this.lineData || this.lineData.length === 0 || this.lineData[0].data.length < 7) {
         return "暂无足够数据生成周报"
       }
@@ -163,8 +164,8 @@ export default {
         return "本周暂无专注记录，尝试开启一个专注计划开启你的专注之旅吧！"
       }
 
-      // 获取七天的专注次数数据（需要提前存储）
-      const sessionData = this.weekSessionData // 假设这是提前存储的专注次数数组
+      // 获取七天的专注次数数据
+      const sessionData = this.lineData[1].data
       const totalSessions = sessionData?.reduce((sum, val) => sum + val, 0) || 0
       const averageSessions = sessionData ? (totalSessions / 7).toFixed(1) : "0.0"
 
@@ -296,31 +297,15 @@ export default {
     }
   },
 
-  toExit() {
-    this.$app.exit()
-  },
-
   toPre() {
     router.back()
-  },
-
-  btnVibrate() {
-    vibrator.vibrate({
-      mode: "short"
-    })
-  },
-
-  display(msg) {
-    this.btnVibrate()
-    prompt.showToast({
-      message: msg,
-      duration: 3000
-    })
   }
 }
 </script>
 
 <style>
+@import url("../../css/liquid.css");
+
 /* 页面 */
 .page {
   flex-direction: column;
@@ -330,30 +315,7 @@ export default {
   align-items: center;
   padding: 20px;
   position: relative;
-  transition: opacity 0.3s ease-in-out; /* 添加过渡效果 */
-}
-
-.note-container {
-  width: 100%;
-  height: 200px;
-  border: 5px solid #ffffff80;
-  border-radius: 35px;
-  flex-direction: column;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.note-from {
-  width: 100%;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.text-content {
-  font-size: 36px;
-  color: #ffffff;
-  font-weight: bold;
+  transition: opacity 0.3s ease-in-out;
 }
 
 /* 顶栏 */
@@ -366,24 +328,9 @@ export default {
   align-items: center;
 }
 
-.btn {
-  height: 100px;
-  width: 100px;
-  border-radius: 50px;
-  border: 5px solid #ffffff70;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-}
-
 .blank {
   height: 100px;
   width: 100px;
-}
-
-.btn-icon {
-  height: 80px;
-  width: 80px;
 }
 
 .title {
